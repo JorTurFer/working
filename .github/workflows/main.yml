@@ -1,0 +1,33 @@
+name: pr-e2e-tests
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: Comment evaluate
+    outputs:
+      run-e2e: ${{ startsWith(github.event.comment.body,'/run-e2e') && steps.check-permission.outputs.has-permission }}
+    steps:
+      - name: Check user permission
+        if: startsWith(github.event.comment.body,'/run-e2e')
+        id: check-permission
+        uses: scherermichael-oss/action-has-permission@master
+        with:
+          required-permission: write
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  run-test:
+    needs: check
+    runs-on: ubuntu-latest
+    name: Execute e2e tests
+    concurrency: pr-e2e-tests
+    if: needs.check.outputs.run-e2e == '1'
+    steps:
+    - uses: LouisBrunner/checks-action@v1.1.1
+      if: always()
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: Test XYZ
+        conclusion: ${{ job.status }}
