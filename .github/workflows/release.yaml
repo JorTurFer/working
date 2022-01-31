@@ -1,0 +1,36 @@
+name: release-build
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build:
+    name: Push Release
+    runs-on: ubuntu-latest
+
+    # build-tools is built from ../../tools/build-tools.Dockerfile
+    container: ghcr.io/kedacore/build-tools:main
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+        # Get release information to determine id of the current release
+      - name: Get Release
+        id: get-release-info
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload deployment YAML file to GitHub release
+      - name: Upload Deployment YAML file
+        id: upload-deployment-yaml
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: https://uploads.github.com/repos/jorturfer/working/releases/${{ steps.get-release-info.outputs.id }}/assets?name=test-${{ steps.get_version.outputs.VERSION }}.yaml
+          asset_path: keda.yaml
+          asset_name: keda-${{ steps.get_version.outputs.VERSION }}.yaml
+          asset_content_type: application/x-yaml
